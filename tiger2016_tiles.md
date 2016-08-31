@@ -26,7 +26,13 @@ Based on [Eric Fischer's TIGER2015 work](https://github.com/ericfischer/tiger-de
    for fn in *_roads.shp; do echo $fn; shp2pgsql -a $fn roads | psql -q -d tiger -U tiger; done
    ```
 
-4. Add the feature name feature code tables.
+4. Add an index on the feature names linearid column to speed later joining.
+
+   ```bash
+   psql -d tiger -c "create index on featnames (linearid);"
+   ```
+
+5. Add the feature name feature code tables.
 
    ```bash
    ## Directionals
@@ -48,4 +54,10 @@ Based on [Eric Fischer's TIGER2015 work](https://github.com/ericfischer/tiger-de
    psql -d tiger -U tiger -c "create index on feature_name_types (type_code);"
    ```
 
-5. 
+6. Create a view with the merged and expanded feature names and roads data.
+
+   ```bash
+   psql -d tiger -U tiger -c "create table feature_name_directionals (direction_code varchar, expanded_full varchar, display_abbr varchar, spanish varchar, translation varchar)"
+   ```
+
+6. 
