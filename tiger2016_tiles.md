@@ -19,4 +19,7 @@ These instructions replicate this layer with the more recent TIGER 2016 release.
    find www2.census.gov/geo/tiger/TIGER2016/FEATNAMES/ -name '*.zip' -print | xargs -L1 -P4 unzip -q
    ```
 
-3. 
+3. Convert the `ROADS` Shapefiles and `FEATNAMES` DBF files into CSVs.
+4. Use the included Python script to join the `ROADS` and `FEATNAMES` data sets and expand the abbreviated road names. The geometries from the `ROADS` table will be encoded in Well-Known-Text format in a column of the CSV.
+5. Run the resulting CSV through tippecanoe to generate an mbtiles file.
+6. Send the mbtiles file to MapBox for rendering.
