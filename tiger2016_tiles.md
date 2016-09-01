@@ -28,9 +28,9 @@ These instructions replicate this layer with the more recent TIGER 2016 release.
 
 4. Use the included Python script to join the `ROADS` and `FEATNAMES` data sets and expand the abbreviated road names. The resulting data will be written as newline-separated GeoJSON features.
 
-```bash
-find . -name '*_roads.shp' -print | xargs -t -L1 --max-procs=4 -Ifile /bin/sh -c 'base=$(basename file _roads.shp) && python merge_tiger_roads.py $base/${base}_roads.shp.csv $base/${base}_featnames.dbf.csv $base/$base.expanded.json'
-```
+   ```bash
+   find . -name '*_roads.shp' -print | xargs -t -L1 --max-procs=4 -Ifile /bin/sh -c 'base=$(basename file _roads.shp) && python merge_tiger_roads.py $base/${base}_roads.shp.csv $base/${base}_featnames.dbf.csv $base/$base.expanded.json'
+   ```
 
 5. Run the resulting CSV through tippecanoe to generate an mbtiles file.
 
