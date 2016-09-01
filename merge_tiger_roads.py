@@ -1,6 +1,11 @@
 import unicodecsv
 import argparse
 import sys
+import simplejson as json
+from shapely import wkt
+from shapely.geometry import mapping
+import shapely.speedups
+shapely.speedups.enable()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('roadfile', type=argparse.FileType('r'))
@@ -43,14 +48,17 @@ for featname in unicodecsv.DictReader(args.featnamefile):
             ]))
         }
 
-outcsv = unicodecsv.DictWriter(args.outfile, ['LINEARID', 'MTFCC', 'NAME_EXPANDED', 'WKT'])
 for road in unicodecsv.DictReader(args.roadfile):
     linearid = road['LINEARID']
     featname = featnames.get(linearid)
+    parsed_shape = wkt.loads(road['WKT'])
     out = {
-        'LINEARID': linearid,
-        'WKT': road['WKT'],
+        'type': 'Feature',
+        'geometry': mapping(parsed_shape),
+        'properties': {
+            'LINEARID': linearid,
+        }
     }
     if featname:
-        out.update(featname)
-    outcsv.writerow(out)
+        out['properties'].update(featname)
+    args.outfile.write(json.dumps(out) + '\n')
