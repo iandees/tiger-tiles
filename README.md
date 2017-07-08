@@ -8,35 +8,44 @@ These instructions replicate this layer with the more recent TIGER 2016 release.
 1. Download TIGER data. `ROADS` for the geometries, `FEATNAMES` for the split-apart road names.
 
    ```bash
-   wget -e robots=off --quiet --mirror --no-parent --continue \
-      http://www2.census.gov/geo/tiger/TIGER2016/FEATNAMES/
-   wget -e robots=off --quiet --mirror --no-parent --continue \
-      http://www2.census.gov/geo/tiger/TIGER2016/ROADS/
+   mkdir -p /mnt/tiger/featnames
+   curl -s https://www2.census.gov/geo/tiger/TIGER2016/FEATNAMES/ | \
+      grep -o '<a href=['"'"'"][^"'"'"']*['"'"'"]' | \
+      grep featnames | \
+      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2016\/FEATNAMES\//' -e 's/["'"'"']$//' | \
+      xargs -I {} -P 24 -n 1 sh -c 'export f={}; curl -s -o /mnt/tiger/featnames/$(basename $f) $f; echo $f'
+   
+   mkdir -p /mnt/tiger/roads
+   curl -s https://www2.census.gov/geo/tiger/TIGER2016/ROADS/ | \
+      grep -o '<a href=['"'"'"][^"'"'"']*['"'"'"]' | \
+      grep roads | \
+      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2016\/ROADS\//' -e 's/["'"'"']$//' | \
+      xargs -I {} -P 24 -n 1 sh -c 'export f={}; curl -s -o /mnt/tiger/roads/$(basename $f) $f; echo $f'
    ```
 
 2. Unzip the TIGER data into per-county directories.
 
    ```bash
-   find www2.census.gov/geo/tiger/TIGER2016/ROADS/ -name '*.zip' -print | \
-      xargs -t -L1 --max-procs=4 /bin/sh -c 'unzip -q file -d $(basename file _roads.zip)'
-   find www2.census.gov/geo/tiger/TIGER2016/FEATNAMES/ -name '*.zip' -print | \
-      xargs -t -L1 --max-procs=4 /bin/sh -c 'unzip -q file -d $(basename file _featnames.zip)'
+   find /mnt/tiger/featnames -name '*.zip' -print | \
+      xargs -t -L1 -P 24 -I {} /bin/sh -c 'export f={}; unzip -q $f -d $(dirname $f)/$(basename $f _featnames.zip)'
+   find /mnt/tiger/roads -name '*.zip' -print | \
+      xargs -t -L1 -P 24 -I {} /bin/sh -c 'export f={}; unzip -q $f -d $(dirname $f)/$(basename $f _roads.zip)'
    ```
 
 3. Convert the `ROADS` Shapefiles and `FEATNAMES` DBF files into CSVs.
 
    ```bash
-   find . -name '*.dbf' -print0 | \
-      xargs -t -0 --max-procs=4 -Ifile ogr2ogr -f CSV file.csv file
-   find . -name '*.shp' -print0 | \
-      xargs -t -0 --max-procs=4 -Ifile ogr2ogr -lco GEOMETRY=AS_WKT -f CSV file.csv file
+   find /mnt/tiger/featnames -name '*.dbf' -print0 | \
+      xargs -t -0 -P 24 -Ifile ogr2ogr -f CSV file.csv file
+   find /mnt/tiger/roads -name '*.shp' -print0 | \
+      xargs -t -0 -P 24 -Ifile ogr2ogr -lco GEOMETRY=AS_WKT -f CSV file.csv file
    ```
 
 4. Use the included Python script to join the `ROADS` and `FEATNAMES` data sets and expand the abbreviated road names. The resulting data will be written as newline-separated GeoJSON features.
 
    ```bash
-   find . -name '*_roads.shp' -print | \
-      xargs -t -L1 --max-procs=4 -Ifile /bin/sh -c 'base=$(basename file _roads.shp) && \
+   find /mnt/tiger/roads -name '*_roads.shp' -print | \
+      xargs -t -L1 -P 24 -Ifile /bin/sh -c 'base=$(basename file _roads.shp) && \
       python merge_tiger_roads.py $base/${base}_roads.shp.csv $base/${base}_featnames.dbf.csv $base/$base.expanded.json'
    ```
 
