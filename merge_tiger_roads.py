@@ -13,19 +13,19 @@ parser.add_argument('featnamefile', type=argparse.FileType('r'))
 parser.add_argument('outfile', type=argparse.FileType('w'), nargs='?', default=sys.stdout)
 args = parser.parse_args()
 
-with open('2016_feature_name_directionals.csv', 'r') as f:
+with open('expansions/directionals.csv', 'r') as f:
     directionals = dict(
         (row['Direction Code'], row['Expanded Full Text'])
         for row in unicodecsv.DictReader(f)
     )
 
-with open('2016_feature_name_qualifiers.csv', 'r') as f:
+with open('expansions/qualifiers.csv', 'r') as f:
     qualifiers = dict(
         (row['Qualifier Code'], row['Expanded Full Text'])
         for row in unicodecsv.DictReader(f)
     )
 
-with open('2016_feature_name_types.csv', 'r') as f:
+with open('expansions/types.csv', 'r') as f:
     types = dict(
         (row['Type Code'], row['Expanded Full Text'])
         for row in unicodecsv.DictReader(f)
