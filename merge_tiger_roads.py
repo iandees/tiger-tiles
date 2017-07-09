@@ -7,6 +7,8 @@ from shapely.geometry import mapping
 import shapely.speedups
 shapely.speedups.enable()
 
+unicodecsv.field_size_limit(sys.maxsize)
+
 parser = argparse.ArgumentParser()
 parser.add_argument('roadfile', type=argparse.FileType('r'))
 parser.add_argument('featnamefile', type=argparse.FileType('r'))
