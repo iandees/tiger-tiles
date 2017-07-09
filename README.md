@@ -53,8 +53,15 @@ These instructions replicate this layer with the more recent TIGER 2016 release.
 5. Run the resulting CSV through tippecanoe to generate an mbtiles file.
 
    ```bash
-   (find . -type f -name '*.expanded.csv' -exec cat {} \;) | \
-      ./tippecanoe-master/tippecanoe -o expanded.mbtiles
+   (find /mnt/tiger/expanded -type f -name '*.expanded.json' -exec cat {} \;) | \
+     ./tippecanoe \
+       --no-line-simplification \
+       --read-parallel \
+       --temporary-directory=/mnt/tiger/tmp \
+       --base-zoom=12 \
+       --maximum-zoom=12 \
+       --minimum-zoom=12 \
+       -o /mnt/tiger/tiger_roads.mbtiles
    ```
 
 6. Send the mbtiles file to MapBox for rendering.
