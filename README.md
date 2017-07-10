@@ -56,6 +56,7 @@ These instructions replicate this layer with the more recent TIGER 2016 release.
    (find /mnt/tiger/expanded -type f -name '*.expanded.json' -exec cat {} \;) | \
      ./tippecanoe \
        --no-line-simplification \
+       --buffer=0 \
        --read-parallel \
        --temporary-directory=/mnt/tiger/tmp \
        --base-zoom=12 \
