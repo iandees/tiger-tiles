@@ -3,7 +3,76 @@ Building TIGER 2017 Road Tiles
 
 US Census Bureau's TIGER dataset is one of the primary nationwide geographic datasets. Roughly 10 years ago, it was imported into OpenStreetMap and huge swaths of it haven't been touched since, even though the TIGER dataset is updated yearly. Based on earlier work that OpenStreetMap US did, [Eric Fischer's TIGER2015 layer](https://github.com/ericfischer/tiger-delta) provides an overlay that helps mappers identify roads that are missing from OpenStreetMap and gives a way to find street names for roads that might not have names in OpenStreetMap.
 
-These instructions replicate this layer with the more recent TIGER 2017 release. The TIGER dataset includes a `ROADS` and `FEATNAMES` dataset. The `ROADS` dataset includes geometries and a `linearid` that can be joined with the `linearid` in the `FEATNAMES` dataset. In `FEATNAMES` the road names are broken into several pieces, which we expand (unabbreviate) and concatenate to form a display label. Finally, the resulting joined data is built into a mbtiles file with [tippecanoe]() and uploaded to MapBox Studio for styling.
+These instructions replicate this layer with the more recent TIGER 2017 release. The TIGER dataset includes a `ROADS` and `FEATNAMES` dataset. The `ROADS` dataset includes geometries and a `linearid` that can be joined with the `linearid` in the `FEATNAMES` dataset. In `FEATNAMES` the road names are broken into several pieces, which we expand (unabbreviate) and concatenate to form a display label. Finally, the resulting joined data is built into a mbtiles file with [tippecanoe](https://github.com/mapbox/tippecanoe) and uploaded to MapBox Studio for styling.
+
+## Running
+
+The steps below assume you're running on an Amazon EC2 using Amazon Linux, but the concept is general enough to run wherever (including on your desktop/laptop if you have ~100GB free disk space).
+
+### Set up instance
+
+1. Start an EC2 instance with multiple vCPUs. I used an `m4.2xlarge`. Use Amazon Linux and set up the security group so you can SSH to the instance.
+
+1. Attach an EBS volume. I used a 500GB size with general purpose IO and attached it to the instance that was created above. Take note of the attachment point (by default it is `/dev/sdf`).
+
+1. SSH to the instance so we can continue configuring dependencies on it.
+
+1. Create a filesystem on the EBS volume and mount it at `/mnt`:
+
+   ```
+   sudo mkdir /mnt
+   sudo mkfs.xfs /dev/xvdf
+   sudo mount /dev/xvdf /mnt
+   sudo chown ec2-user /mnt
+   ```
+
+### Install GDAL
+
+(Based on [this gist](https://gist.github.com/mojodna/2f596ca2fca48f08438e))
+
+1. Update `yum` and add a 3rd party repository:
+
+   ```
+   sudo yum -y update
+   sudo yum-config-manager --enable epel
+   ```
+
+1. Install build and compile dependencies:
+
+   ```
+   sudo yum -y install make automake gcc gcc-c++ libcurl-devel proj-devel geos-devel
+   ```
+
+1. Download, compile, and install the gdal source:
+
+   ```
+   cd /tmp
+   curl -L http://download.osgeo.org/gdal/2.0.0/gdal-2.0.0.tar.gz | tar zxf -
+   cd gdal-2.0.0/
+   ./configure --prefix=/usr/local --without-python
+   make -j4
+   sudo make install
+   ```
+
+### Install Tippecanoe
+
+1. Install compile dependencies:
+
+   ```
+   sudo yum install -y sqlite-devel zlib-devel
+   ```
+   
+1. Download, compile, and install the Tippecanoe source:
+
+   ```
+   cd /tmp
+   curl -L https://github.com/mapbox/tippecanoe/archive/1.24.1.tar.gz | tar zxf -
+   cd tippecanoe-1.24.1/
+   make -j4
+   sudo make install
+   ```
+
+### Download and expand the TIGER dataset
 
 1. Download TIGER data. `ROADS` for the geometries, `FEATNAMES` for the split-apart road names.
 
@@ -53,8 +122,9 @@ These instructions replicate this layer with the more recent TIGER 2017 release.
 5. Run the resulting CSV through tippecanoe to generate an mbtiles file.
 
    ```bash
+   mkdir -p /mnt/tiger/tmp
    (find /mnt/tiger/expanded -type f -name '*.expanded.json' -exec cat {} \;) | \
-     ./tippecanoe \
+     tippecanoe \
        --no-line-simplification \
        --buffer=0 \
        --read-parallel \
