@@ -1,5 +1,4 @@
-Building TIGER 2017 Road Tiles
-==============================
+# Building TIGER 2017 Road Tiles
 
 US Census Bureau's TIGER dataset is one of the primary nationwide geographic datasets. Roughly 10 years ago, it was imported into OpenStreetMap and huge swaths of it haven't been touched since, even though the TIGER dataset is updated yearly. Based on earlier work that OpenStreetMap US did, [Eric Fischer's TIGER2015 layer](https://github.com/ericfischer/tiger-delta) provides an overlay that helps mappers identify roads that are missing from OpenStreetMap and gives a way to find street names for roads that might not have names in OpenStreetMap.
 
@@ -11,18 +10,25 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
 
 ### Set up instance
 
-1. Start an EC2 instance with multiple vCPUs. I used an `m4.2xlarge`. Use Amazon Linux and set up the security group so you can SSH to the instance.
+1. Start an EC2 instance with multiple vCPUs. I used an `m5.2xlarge`. Use Amazon Linux and set up the security group so you can SSH to the instance.
 
-1. Attach an EBS volume. I used a 500GB size with general purpose IO and attached it to the instance that was created above. Take note of the attachment point (by default it is `/dev/sdf`).
+1. Attach an EBS volume. I used a 500GB size with general purpose IO and attached it to the instance that was created above.
 
 1. SSH to the instance so we can continue configuring dependencies on it.
+
+1. Update the instance and install the XFS tools:
+
+   ```
+   sudo yum update -y
+   sudo yum install xfsprogs -y
+   ```
 
 1. Create a filesystem on the EBS volume and mount it at `/mnt`:
 
    ```
-   sudo mkdir /mnt
-   sudo mkfs.xfs /dev/xvdf
-   sudo mount /dev/xvdf /mnt
+   sudo mkdir -p /mnt
+   sudo mkfs.xfs /dev/nvme1n1
+   sudo mount /dev/nvme1n1 /mnt
    sudo chown ec2-user /mnt
    ```
 
@@ -33,8 +39,8 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
 1. Update `yum` and add a 3rd party repository:
 
    ```
-   sudo yum -y update
    sudo yum-config-manager --enable epel
+   sudo yum -y update
    ```
 
 1. Install build and compile dependencies:
@@ -50,7 +56,7 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
    curl -L http://download.osgeo.org/gdal/2.0.0/gdal-2.0.0.tar.gz | tar zxf -
    cd gdal-2.0.0/
    ./configure --prefix=/usr/local --without-python
-   make -j4
+   make -j8
    sudo make install
    ```
 
@@ -66,9 +72,9 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
 
    ```
    cd /tmp
-   curl -L https://github.com/mapbox/tippecanoe/archive/1.24.1.tar.gz | tar zxf -
-   cd tippecanoe-1.24.1/
-   make -j4
+   curl -L https://github.com/mapbox/tippecanoe/archive/1.27.14.tar.gz | tar zxf -
+   cd tippecanoe-1.27.14/
+   make -j8
    sudo make install
    ```
 
