@@ -1,7 +1,7 @@
 import unicodecsv
 import argparse
 import sys
-import simplejson as json
+import ujson as json
 from shapely import wkt
 from shapely.geometry import mapping
 import shapely.speedups
