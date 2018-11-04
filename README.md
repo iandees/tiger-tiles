@@ -1,8 +1,8 @@
-# Building TIGER 2017 Road Tiles
+# Building TIGER 2018 Road Tiles
 
 US Census Bureau's TIGER dataset is one of the primary nationwide geographic datasets. Roughly 10 years ago, it was imported into OpenStreetMap and huge swaths of it haven't been touched since, even though the TIGER dataset is updated yearly. Based on earlier work that OpenStreetMap US did, [Eric Fischer's TIGER2015 layer](https://github.com/ericfischer/tiger-delta) provides an overlay that helps mappers identify roads that are missing from OpenStreetMap and gives a way to find street names for roads that might not have names in OpenStreetMap.
 
-These instructions replicate this layer with the more recent TIGER 2017 release. The TIGER dataset includes a `ROADS` and `FEATNAMES` dataset. The `ROADS` dataset includes geometries and a `linearid` that can be joined with the `linearid` in the `FEATNAMES` dataset. In `FEATNAMES` the road names are broken into several pieces, which we expand (unabbreviate) and concatenate to form a display label. Finally, the resulting joined data is built into a mbtiles file with [tippecanoe](https://github.com/mapbox/tippecanoe) and uploaded to MapBox Studio for styling.
+These instructions replicate this layer with the more recent TIGER 2018 release. The TIGER dataset includes a `ROADS` and `FEATNAMES` dataset. The `ROADS` dataset includes geometries and a `linearid` that can be joined with the `linearid` in the `FEATNAMES` dataset. In `FEATNAMES` the road names are broken into several pieces, which we expand (unabbreviate) and concatenate to form a display label. Finally, the resulting joined data is built into a mbtiles file with [tippecanoe](https://github.com/mapbox/tippecanoe) and uploaded to MapBox Studio for styling.
 
 ## Running
 
@@ -56,7 +56,7 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
    curl -L http://download.osgeo.org/gdal/2.0.0/gdal-2.0.0.tar.gz | tar zxf -
    cd gdal-2.0.0/
    ./configure --prefix=/usr/local --without-python
-   make -j8
+   make -j$(nproc)
    sudo make install
    ```
 
@@ -74,7 +74,7 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
    cd /tmp
    curl -L https://github.com/mapbox/tippecanoe/archive/1.27.14.tar.gz | tar zxf -
    cd tippecanoe-1.27.14/
-   make -j8
+   make -j$(nproc)
    sudo make install
    ```
 
@@ -84,17 +84,17 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
 
    ```bash
    mkdir -p /mnt/tiger/featnames
-   curl -s https://www2.census.gov/geo/tiger/TIGER2017/FEATNAMES/ | \
+   curl -s https://www2.census.gov/geo/tiger/TIGER2018/FEATNAMES/ | \
       grep -o '<a href=['"'"'"][^"'"'"']*['"'"'"]' | \
       grep featnames | \
-      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2017\/FEATNAMES\//' -e 's/["'"'"']$//' | \
+      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2018\/FEATNAMES\//' -e 's/["'"'"']$//' | \
       xargs -I {} -P 24 -n 1 sh -c 'export f={}; curl -s -o /mnt/tiger/featnames/$(basename $f) $f; echo $f'
 
    mkdir -p /mnt/tiger/roads
-   curl -s https://www2.census.gov/geo/tiger/TIGER2017/ROADS/ | \
+   curl -s https://www2.census.gov/geo/tiger/TIGER2018/ROADS/ | \
       grep -o '<a href=['"'"'"][^"'"'"']*['"'"'"]' | \
       grep roads | \
-      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2017\/ROADS\//' -e 's/["'"'"']$//' | \
+      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2018\/ROADS\//' -e 's/["'"'"']$//' | \
       xargs -I {} -P 24 -n 1 sh -c 'export f={}; curl -s -o /mnt/tiger/roads/$(basename $f) $f; echo $f'
    ```
 
@@ -152,5 +152,7 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
    aws s3 cp \
       --acl=public-read \
       /mnt/tiger/tiger_roads.mbtiles \
-      s3://data.openstreetmap.us/tiger2017_expanded_roads.mbtiles
+      s3://data.openstreetmap.us/tiger2018_expanded_roads.mbtiles
    ```
+
+Once this is complete, you'll probably want to follow the instructions for [`tiger-battlegrid`](https://github.com/iandees/tiger-battlegrid).
