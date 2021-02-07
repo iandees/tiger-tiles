@@ -1,5 +1,5 @@
-import unicodecsv
 import argparse
+import csv
 import sys
 import ujson as json
 from shapely import wkt
@@ -18,19 +18,19 @@ args = parser.parse_args()
 with open('expansions/directionals.csv', 'r') as f:
     directionals = dict(
         (row['Direction Code'], row['Expanded Full Text'])
-        for row in unicodecsv.DictReader(f)
+        for row in csv.DictReader(f)
     )
 
 with open('expansions/qualifiers.csv', 'r') as f:
     qualifiers = dict(
         (row['Qualifier Code'], row['Expanded Full Text'])
-        for row in unicodecsv.DictReader(f)
+        for row in csv.DictReader(f)
     )
 
 with open('expansions/types.csv', 'r') as f:
     types = dict(
         (row['Type Code'], row['Expanded Full Text'])
-        for row in unicodecsv.DictReader(f)
+        for row in csv.DictReader(f)
     )
 
 featnames = dict()
