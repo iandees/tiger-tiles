@@ -7,7 +7,7 @@ from shapely.geometry import mapping
 import shapely.speedups
 shapely.speedups.enable()
 
-unicodecsv.field_size_limit(sys.maxsize)
+csv.field_size_limit(sys.maxsize)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('roadfile', type=argparse.FileType('r'))
@@ -34,7 +34,7 @@ with open('expansions/types.csv', 'r') as f:
     )
 
 featnames = dict()
-for featname in unicodecsv.DictReader(args.featnamefile):
+for featname in csv.DictReader(args.featnamefile):
     linearid = featname['LINEARID']
     if linearid not in featnames:
         featnames[linearid] = {
@@ -50,7 +50,7 @@ for featname in unicodecsv.DictReader(args.featnamefile):
             ]))
         }
 
-for road in unicodecsv.DictReader(args.roadfile):
+for road in csv.DictReader(args.roadfile):
     linearid = road['LINEARID']
     featname = featnames.get(linearid)
     parsed_shape = wkt.loads(road['WKT'])
