@@ -1,3 +1,2 @@
 ujson==1.35
-unicodecsv==0.14.1
-Shapely==1.6.4.post1
+Shapely==1.7.1
