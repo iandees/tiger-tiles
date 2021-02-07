@@ -1,8 +1,8 @@
-# Building TIGER 2019 Road Tiles
+# Building TIGER 2020 Road Tiles
 
-US Census Bureau's TIGER dataset is one of the primary nationwide geographic datasets. Roughly 10 years ago, it was imported into OpenStreetMap and huge swaths of it haven't been touched since, even though the TIGER dataset is updated yearly. Based on earlier work that OpenStreetMap US did, [Eric Fischer's TIGER2015 layer](https://github.com/ericfischer/tiger-delta) provides an overlay that helps mappers identify roads that are missing from OpenStreetMap and gives a way to find street names for roads that might not have names in OpenStreetMap.
+US Census Bureau's TIGER dataset is one of the primary nationwide geographic datasets. Roughly 15 years ago, it was imported into OpenStreetMap and huge swaths of it haven't been touched since, even though the TIGER dataset is updated yearly. Based on earlier work that OpenStreetMap US did, [Eric Fischer's TIGER2015 layer](https://github.com/ericfischer/tiger-delta) provides an overlay that helps mappers identify roads that are missing from OpenStreetMap and gives a way to find street names for roads that might not have names in OpenStreetMap.
 
-These instructions replicate this layer with the more recent TIGER 2019 release. The TIGER dataset includes a `ROADS` and `FEATNAMES` dataset. The `ROADS` dataset includes geometries and a `linearid` that can be joined with the `linearid` in the `FEATNAMES` dataset. In `FEATNAMES` the road names are broken into several pieces, which we expand (unabbreviate) and concatenate to form a display label. Finally, the resulting joined data is built into a mbtiles file with [tippecanoe](https://github.com/mapbox/tippecanoe) and uploaded to MapBox Studio for styling.
+These instructions replicate this layer with the more recent TIGER 2020 release. The TIGER dataset includes a `ROADS` and `FEATNAMES` dataset. The `ROADS` dataset includes geometries and a `linearid` that can be joined with the `linearid` in the `FEATNAMES` dataset. In `FEATNAMES` the road names are broken into several pieces, which we expand (unabbreviate) and concatenate to form a display label. Finally, the resulting joined data is built into a mbtiles file with [tippecanoe](https://github.com/mapbox/tippecanoe) and uploaded to MapBox Studio for styling.
 
 ## Running
 
@@ -10,43 +10,31 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
 
 ### Set up instance
 
-1. Start an EC2 instance with multiple vCPUs. I used an `m5.2xlarge`. Use Amazon Linux and set up the security group so you can SSH to the instance.
+1. Start an EC2 instance with multiple vCPUs. I used an `m6g.2xlarge`. Use Ubuntu 20.04 and set up the security group so you can SSH to the instance.
 
-1. Attach an EBS volume. I used a 500GB size with general purpose IO and attached it to the instance that was created above.
+1. Increase the main partition of the instance to 500GB.
 
 1. SSH to the instance so we can continue configuring dependencies on it.
 
-1. Update the instance and install the XFS tools:
+1. Update the instance:
 
    ```
-   sudo yum update -y
-   sudo yum install xfsprogs -y
+   sudo apt-get update && sudo apt-get upgrade -y
    ```
 
-1. Create a filesystem on the EBS volume and mount it at `/mnt`:
+1. Create a space for work:
 
    ```
    sudo mkdir -p /mnt
-   sudo mkfs.xfs /dev/nvme1n1
-   sudo mount /dev/nvme1n1 /mnt
-   sudo chown ec2-user /mnt
+   sudo chown ubuntu /mnt
    ```
 
 ### Install GDAL
 
-(Based on [this gist](https://gist.github.com/mojodna/2f596ca2fca48f08438e))
-
-1. Update `yum` and add a 3rd party repository:
-
-   ```
-   sudo yum-config-manager --enable epel
-   sudo yum -y update
-   ```
-
 1. Install build and compile dependencies:
 
    ```
-   sudo yum -y install make automake gcc gcc-c++ libcurl-devel proj-devel geos-devel
+   sudo apt-get -y install build-essential
    ```
 
 1. Download, compile, and install the gdal source:
@@ -60,12 +48,31 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
    sudo make install
    ```
 
+### Install libgeos
+
+1. Install build dependencies:
+
+   ```
+   sudo apt-get -y install cmake
+   ```
+
+1. Download, compile, and install the libgeos sources:
+
+   ```
+   cd /tmp
+   curl -L https://github.com/libgeos/geos/archive/3.6.1.tar.gz | tar zxf -
+   cd geos-3.6.1/
+   mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
+   make -j$(nproc)
+   sudo make install
+   ```
+
 ### Install Tippecanoe
 
 1. Install compile dependencies:
 
    ```
-   sudo yum install -y sqlite-devel zlib-devel
+   sudo apt-get install -y libsqlite3-dev zlib1g-dev
    ```
 
 1. Download, compile, and install the Tippecanoe source:
@@ -84,17 +91,17 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
 
    ```bash
    mkdir -p /mnt/tiger/featnames
-   curl -s https://www2.census.gov/geo/tiger/TIGER2019/FEATNAMES/ | \
+   curl -s https://www2.census.gov/geo/tiger/TIGER2020/FEATNAMES/ | \
       grep -o '<a href=['"'"'"][^"'"'"']*['"'"'"]' | \
       grep featnames | \
-      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2019\/FEATNAMES\//' -e 's/["'"'"']$//' | \
+      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2020\/FEATNAMES\//' -e 's/["'"'"']$//' | \
       xargs -I {} -P 24 -n 1 sh -c 'export f={}; curl -s -o /mnt/tiger/featnames/$(basename $f) $f; echo $f'
 
    mkdir -p /mnt/tiger/roads
-   curl -s https://www2.census.gov/geo/tiger/TIGER2019/ROADS/ | \
+   curl -s https://www2.census.gov/geo/tiger/TIGER2020/ROADS/ | \
       grep -o '<a href=['"'"'"][^"'"'"']*['"'"'"]' | \
       grep roads | \
-      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2019\/ROADS\//' -e 's/["'"'"']$//' | \
+      sed -e 's/^<a href=["'"'"']/https:\/\/www2.census.gov\/geo\/tiger\/TIGER2020\/ROADS\//' -e 's/["'"'"']$//' | \
       xargs -I {} -P 24 -n 1 sh -c 'export f={}; curl -s -o /mnt/tiger/roads/$(basename $f) $f; echo $f'
    ```
 
@@ -102,6 +109,7 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
 
    ```bash
    mkdir -p /mnt/tiger/expanded
+   sudo apt-get install -y unzip
    find /mnt/tiger/featnames -name '*.zip' -print | \
       xargs -t -L1 -P 24 -I {} /bin/sh -c 'export f={}; unzip -q $f -d /mnt/tiger/expanded/$(basename $f _featnames.zip)'
    find /mnt/tiger/roads -name '*.zip' -print | \
@@ -123,12 +131,12 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
    cd /tmp
    curl -L https://github.com/iandees/tiger-tiles/archive/master.tar.gz | tar zxf -
    cd tiger-tiles-master/
-   sudo yum install -y python-pip
-   sudo pip install -r requirements.txt
+   sudo apt-get install -y python3-pip
+   pip3 install -r requirements.txt
 
    find /mnt/tiger/expanded -name '*_roads.shp' -print | \
       xargs -t -L1 -P 24 -Ifile /bin/sh -c 'f=file; d=$(dirname $f); b=$(basename $f _roads.shp) && \
-      python merge_tiger_roads.py $d/${b}_roads.shp.csv $d/${b}_featnames.dbf.csv $d/$b.expanded.json'
+      python3 merge_tiger_roads.py $d/${b}_roads.shp.csv $d/${b}_featnames.dbf.csv $d/$b.expanded.json'
    ```
 
 1. Run the resulting CSV through tippecanoe to generate an mbtiles file.
