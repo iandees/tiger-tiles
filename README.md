@@ -161,7 +161,7 @@ The steps below assume you're running on an Amazon EC2 using Amazon Linux, but t
    aws s3 cp \
       --acl=public-read \
       /mnt/tiger/tiger_roads.mbtiles \
-      s3://data.openstreetmap.us/tiger2019_expanded_roads.mbtiles
+      s3://data.openstreetmap.us/tiger2020_expanded_roads.mbtiles
    ```
 
 Once this is complete, you'll probably want to follow the instructions for [`tiger-battlegrid`](https://github.com/iandees/tiger-battlegrid).
