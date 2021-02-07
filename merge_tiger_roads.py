@@ -1,5 +1,5 @@
-import unicodecsv
 import argparse
+import csv
 import sys
 import ujson as json
 from shapely import wkt
@@ -7,7 +7,7 @@ from shapely.geometry import mapping
 import shapely.speedups
 shapely.speedups.enable()
 
-unicodecsv.field_size_limit(sys.maxsize)
+csv.field_size_limit(sys.maxsize)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('roadfile', type=argparse.FileType('r'))
@@ -18,23 +18,23 @@ args = parser.parse_args()
 with open('expansions/directionals.csv', 'r') as f:
     directionals = dict(
         (row['Direction Code'], row['Expanded Full Text'])
-        for row in unicodecsv.DictReader(f)
+        for row in csv.DictReader(f)
     )
 
 with open('expansions/qualifiers.csv', 'r') as f:
     qualifiers = dict(
         (row['Qualifier Code'], row['Expanded Full Text'])
-        for row in unicodecsv.DictReader(f)
+        for row in csv.DictReader(f)
     )
 
 with open('expansions/types.csv', 'r') as f:
     types = dict(
         (row['Type Code'], row['Expanded Full Text'])
-        for row in unicodecsv.DictReader(f)
+        for row in csv.DictReader(f)
     )
 
 featnames = dict()
-for featname in unicodecsv.DictReader(args.featnamefile):
+for featname in csv.DictReader(args.featnamefile):
     linearid = featname['LINEARID']
     if linearid not in featnames:
         featnames[linearid] = {
@@ -50,7 +50,7 @@ for featname in unicodecsv.DictReader(args.featnamefile):
             ]))
         }
 
-for road in unicodecsv.DictReader(args.roadfile):
+for road in csv.DictReader(args.roadfile):
     linearid = road['LINEARID']
     featname = featnames.get(linearid)
     parsed_shape = wkt.loads(road['WKT'])
